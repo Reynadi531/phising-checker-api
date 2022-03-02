@@ -37,8 +37,12 @@ func main() {
 }
 
 func task() {
-	err := utils.DownloadLinks("links.txt")
-	if err != nil {
+	if err := utils.DownloadLinks("links.txt"); err != nil {
 		panic(err)
 	}
+
+	if err := utils.DownloadsSuspiciuosLink("suspicious-links.txt"); err != nil {
+		panic(err)
+	}
+
 }

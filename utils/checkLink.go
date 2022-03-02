@@ -16,3 +16,14 @@ func CheckLink(domain string) (bool, error) {
 
 	return strings.Contains(s, domain), nil
 }
+
+func CheckSusDomain(domain string) (bool, error) {
+	f, err := ioutil.ReadFile("suspicious-links.txt")
+	if err != nil {
+		return false, err
+	}
+
+	s := string(f)
+
+	return strings.Contains(s, domain), nil
+}

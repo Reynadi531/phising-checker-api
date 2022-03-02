@@ -11,10 +11,11 @@ import (
 )
 
 type CheckResult struct {
-	IsFound   bool      `json:"isFound"`
-	IsPhising bool      `json:"isPhising"`
-	Domain    string    `json:"domain"`
-	Date      time.Time `json:"date"`
+	IsFound      bool      `json:"isFound"`
+	IsPhising    bool      `json:"isPhising"`
+	IsSuspicious bool      `json:"isSuspicious"`
+	Domain       string    `json:"domain"`
+	Date         time.Time `json:"date"`
 }
 
 type ResponseCheck struct {
@@ -30,6 +31,7 @@ func CheckController(c *fiber.Ctx) error {
 
 	var cr CheckResult
 	var rc ResponseCheck
+
 	u, err := url.ParseRequestURI(c.Query("url"))
 	if err != nil {
 		cr = CheckResult{
@@ -57,48 +59,74 @@ func CheckController(c *fiber.Ctx) error {
 		panic(err)
 	}
 
-	if phising {
+	sus, err := utils.CheckSusDomain(domain)
+	if err != nil {
+		panic(err)
+	}
+
+	if sus && phising {
 		cr = CheckResult{
-			IsFound:   true,
-			IsPhising: true,
-			Domain:    domain,
-			Date:      time.Now(),
+			IsFound:      true,
+			IsPhising:    true,
+			IsSuspicious: true,
+			Domain:       domain,
+			Date:         time.Now(),
 		}
 
 		rc = ResponseCheck{
 			Status:  http.StatusOK,
-			Message: "Found it, its scam",
+			Message: "Found, its suspicious and phising",
 			Data:    cr,
 		}
 
-		c.SendStatus(http.StatusOK)
+		c.Status(http.StatusOK)
 		return c.JSON(rc)
-	} else {
+	} else if sus {
 		cr = CheckResult{
-			IsFound:   true,
-			IsPhising: false,
-			Domain:    domain,
-			Date:      time.Now(),
+			IsFound:      true,
+			IsPhising:    false,
+			IsSuspicious: true,
+			Domain:       domain,
+			Date:         time.Now(),
 		}
 
 		rc = ResponseCheck{
 			Status:  http.StatusOK,
-			Message: "Its not scam",
+			Message: "Found, its suspicious",
 			Data:    cr,
 		}
 
-		c.SendStatus(http.StatusOK)
+		c.Status(http.StatusOK)
+		return c.JSON(rc)
+	} else if phising {
+		cr = CheckResult{
+			IsFound:      true,
+			IsPhising:    true,
+			IsSuspicious: false,
+			Domain:       domain,
+			Date:         time.Now(),
+		}
+
+		rc = ResponseCheck{
+			Status:  http.StatusOK,
+			Message: "Found, its phising",
+			Data:    cr,
+		}
+
+		c.Status(http.StatusOK)
 		return c.JSON(rc)
 	}
+	return nil
 }
 
 func CheckControllerWithoutParam(c *fiber.Ctx) error {
 
 	cr := CheckResult{
-		IsFound:   false,
-		IsPhising: false,
-		Domain:    "",
-		Date:      time.Now(),
+		IsFound:      false,
+		IsPhising:    false,
+		IsSuspicious: false,
+		Domain:       "",
+		Date:         time.Now(),
 	}
 
 	rc := ResponseCheck{
